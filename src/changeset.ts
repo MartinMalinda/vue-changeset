@@ -1,5 +1,5 @@
 import clone from 'fast-copy';
-import { computed, reactive, ref, Ref, watch, toRefs } from 'vue';
+import { computed, reactive, ref, Ref, watch, toRefs, toRef } from 'vue';
 
 // <IDEA>
 // const model = reactive({
@@ -12,6 +12,16 @@ import { computed, reactive, ref, Ref, watch, toRefs } from 'vue';
 //     // validate ETC
 //   });
 // });
+// </IDEA>
+
+// <IDEA>
+// const count = ref(1)
+// const plusOne = computed({
+//   get: () => count.value + 1,
+//   set: val => {
+//     count.value = val - 1
+//   }
+// })
 // </IDEA>
 
 
@@ -40,7 +50,6 @@ type ChangeMap = Record<any, Change>;
 
 type Changeset<T> = {
   _model: T,
-  _data: T,
   data: T,
   change: ChangeMap,
   validate: ValidateFn,
@@ -72,8 +81,7 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
 
   const changeset = reactive<Changeset<T>>({
     _model: model,
-    _data: clone(model),
-    data: null as any, // to be assigned later
+    data: clone(model),
     change: createChangeMap(model),
     async validate(prop, value) {
       changeset.change[prop].isValidating = true;
@@ -88,35 +96,18 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
     }
   });
 
-  changeset.data = new Proxy(changeset, {
-    get(target, prop : string | number) {
-      console.log('get', { target, prop, value: target[prop] });
-      return target[prop];
-    },
+  if (_options.autoValidate) {
+    Object.keys(model).forEach((key) => {
+      watch(() => changeset.data[key], (newValue) => {
+        changeset.validate(key, newValue);
+      });
+    });
+  }
 
-    set(target, prop: string | number, value) {
-      target[prop] = value;
-      if (_options.autoValidate) {
-        changeset.validate(prop, value)
-      }
+  // console.log({ name: name.value });
+  // console.log({ data });
+  // console.log({ value: data.value });
 
-      console.log('set', { target, prop, value });
-      changeset.change[prop].newValue = value;
-      changeset._data[prop] = value;
-
-      return true;
-    }
-  });
 
   return changeset;
-}
-
-function demo() {
-  const changeset = createChangeset({
-    name: 'Martin',
-    isAdmin: false,
-    roles: ['foo', 'bar', 'baz']
-  });
-
-  changeset.data.name = 'bar';
 }
