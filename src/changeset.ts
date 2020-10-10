@@ -83,7 +83,7 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
     _model: model,
     data: clone(model),
     change: createChangeMap(model),
-    async validate(prop, value) {
+    async validate(prop?, value?) {
       changeset.change[prop].isValidating = true;
       changeset.change[prop].error = await _options.validate(prop, value);
       changeset.change[prop].isValidating = false;

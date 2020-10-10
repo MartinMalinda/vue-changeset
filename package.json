@@ -9,6 +9,7 @@
   "author": "Martin Malinda",
   "license": "MIT",
   "devDependencies": {
+    "@testing-library/dom": "^7.24.5",
     "jest": "^26.5.2",
     "microbundle": "^0.12.4",
     "ts-jest": "^26.4.1",
