@@ -1,5 +1,19 @@
 import clone from 'fast-copy';
-import { computed, reactive, ref, Ref } from 'vue';
+import { computed, reactive, ref, Ref, watch, toRefs } from 'vue';
+
+// <IDEA>
+// const model = reactive({
+//   name: 'foo'
+// });
+
+// const refs = toRefs(model);
+// Object.entries(refs).forEach(([key, ref]) => {
+//   watch(() => ref, () => {
+//     // validate ETC
+//   });
+// });
+// </IDEA>
+
 
 type BaseModel = Record<any, any>;
 type ValidationError = boolean | string;
