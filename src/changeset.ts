@@ -27,18 +27,18 @@ import { computed, reactive, ref, Ref, watch, toRefs, toRef } from 'vue';
 
 type BaseModel = Record<any, any>;
 type ValidationError = boolean | string;
-type ValidateFn = (prop, value) => ValidationError | Promise<ValidationError>;
+type ValidateFn<T> = (prop? : keyof T, value?) => ValidationError | Promise<ValidationError>;
 
-interface ChangesetOptions {
+interface ChangesetOptions<T> {
   autoValidate: boolean;
-  validate: ValidateFn;
+  validate: ValidateFn<T>;
 };
-const defaultOptions : ChangesetOptions = {
+const defaultOptions : ChangesetOptions<any> = {
   autoValidate: false,
   validate: (prop, value) => true
 };
 
-type Change = {
+export type Change = {
   oldValue: any;
   newValue: any;
   isDirty: Ref<boolean>;
@@ -52,7 +52,7 @@ type Changeset<T> = {
   _model: T,
   data: T,
   change: ChangeMap,
-  validate: ValidateFn,
+  validate: ValidateFn<T>,
   assign: () => void,
 };
 
@@ -72,7 +72,7 @@ function createChangeMap(model : BaseModel) : ChangeMap {
   return change;
 }
 
-export function createChangeset<T extends BaseModel>(model: T, options? : Partial<ChangesetOptions>) : Changeset<T> {
+export function createChangeset<T extends BaseModel>(model: T, options? : Partial<ChangesetOptions<T>>) : Changeset<T> {
 
   const _options = {
     ...defaultOptions,
@@ -83,8 +83,17 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
     _model: model,
     data: clone(model),
     change: createChangeMap(model),
-    async validate(prop?, value?) {
+    async validate(prop) {
+      if (!prop) {
+        // validate all
+        Object.keys(changeset.data).forEach(key => {
+          changeset.validate(key);
+        });
+        return;
+      }
+
       changeset.change[prop].isValidating = true;
+      const value = changeset.data[prop];
       changeset.change[prop].error = await _options.validate(prop, value);
       changeset.change[prop].isValidating = false;
       return changeset.change[prop].error;
@@ -96,13 +105,13 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
     }
   });
 
-  if (_options.autoValidate) {
-    Object.keys(model).forEach((key) => {
-      watch(() => changeset.data[key], (newValue) => {
-        changeset.validate(key, newValue);
-      });
+  Object.keys(model).forEach((key) => {
+    watch(() => changeset.data[key], (newValue) => {
+      if (_options.autoValidate) {
+        changeset.validate(key);
+      }
     });
-  }
+  });
 
   // console.log({ name: name.value });
   // console.log({ data });
