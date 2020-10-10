@@ -26,4 +26,16 @@ describe('changeset', () => {
     changeset.data.name = 'Rudolph';
     expect(model).toStrictEqual({ name: 'Alexander' });
   });
+
+  test('has isDirty false in the beginning', async () => {
+    const model = { name: 'Alexander' };
+    const changeset = createChangeset(model);
+    expect(changeset.isDirty).toBe(false);
+  });
+
+  test('has isValid true in the beginning', async () => {
+    const model = { name: 'Alexander' };
+    const changeset = createChangeset(model);
+    expect(changeset.isValid).toBe(true);
+  });
 });

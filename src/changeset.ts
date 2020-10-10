@@ -52,6 +52,8 @@ type Changeset<T> = {
   _model: T,
   data: T,
   change: ChangeMap,
+  isValid: Ref<boolean>,
+  isDirty: Ref<boolean>,
   validate: ValidateFn<T>,
   assign: () => void,
 };
@@ -83,6 +85,12 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
     _model: model,
     data: clone(model),
     change: createChangeMap(model),
+    isValid: computed(() => {
+      return !Object.values(changeset.change as ChangeMap).find(change => change.error);
+    }),
+    isDirty: computed(() => {
+      return !!Object.values(changeset.change as ChangeMap).find(change => change.isDirty);
+    }),
     async validate(prop) {
       if (!prop) {
         // validate all
