@@ -112,7 +112,8 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
 
       changeset.change[prop].isValidating = true;
       const value = changeset.data[prop];
-      changeset.change[prop].error = await _options.validate(prop, value);
+      const validationResult = await _options.validate(prop, value);
+      changeset.change[prop].error = typeof validationResult === 'string' ? validationResult : !validationResult;
       changeset.change[prop].isValidating = false;
       return changeset.change[prop].error;
     },
