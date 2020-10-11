@@ -46,32 +46,36 @@ export type Change = {
   isValidating: boolean;
 };
 
-type ChangeMap = Record<any, Change>;
+type ChangeMap<T> = Record<keyof T, Change>;
 
 type Changeset<T> = {
   _model: T,
   data: T,
-  change: ChangeMap,
+  change: ChangeMap<T>,
   isValid: Ref<boolean>,
   isDirty: Ref<boolean>,
+  isValidating: Ref<boolean>,
   validate: ValidateFn<T>,
   assign: () => void,
 };
 
-function createChangeMap(model : BaseModel) : ChangeMap {
-  const change : Record<any, Change> = {};
+function createChangeMap<T>(model : T, getChangeset : () => Changeset<T>) : ChangeMap<T> {
+  const changeMap : any = {};
 
   Object.keys(model).forEach(key => {
-    change[key] = {
+    changeMap[key] = {
       oldValue: model[key],
-      newValue: ref(model[key]),
-      isDirty: computed(() => change.oldValue !== change.newValue), // TODO: abstract and improve
+      newValue: model[key],
+      isDirty: computed(() => {
+        const changeset = getChangeset();
+        return changeset.change[key].oldValue !== changeset.change[key].newValue;
+      }), // TODO: abstract and improve
       error: false,
       isValidating: false,
     };
   });
 
-  return change;
+  return changeMap;
 }
 
 export function createChangeset<T extends BaseModel>(model: T, options? : Partial<ChangesetOptions<T>>) : Changeset<T> {
@@ -84,20 +88,22 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
   const changeset = reactive<Changeset<T>>({
     _model: model,
     data: clone(model),
-    change: createChangeMap(model),
+    change: createChangeMap(model, () => changeset),
     isValid: computed(() => {
-      return !Object.values(changeset.change as ChangeMap).find(change => change.error);
+      return !Object.values(changeset.change as ChangeMap<T>).find(change => change.error);
     }),
     isDirty: computed(() => {
-      return !!Object.values(changeset.change as ChangeMap).find(change => change.isDirty);
+      return !!Object.values(changeset.change as ChangeMap<T>).find(change => change.isDirty);
+    }),
+    isValidating: computed(() => {
+      return !!Object.values(changeset.change as ChangeMap<T>).find(change => change.isValidating);
     }),
     async validate(prop) {
       if (!prop) {
-        // validate all
-        Object.keys(changeset.data).forEach(key => {
-          changeset.validate(key);
-        });
-        return;
+        // call itself with each props
+        const promises = Object.keys(changeset.data).map(key => changeset.validate(key));
+        const errors = await Promise.all(promises);
+        return errors;
       }
 
       changeset.change[prop].isValidating = true;
@@ -109,7 +115,7 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
     assign() {
       Object.assign(model, changeset.data);
       changeset.data = clone(model);
-      changeset.change = createChangeMap(model);
+      changeset.change = createChangeMap(model, () => changeset);
     }
   });
 

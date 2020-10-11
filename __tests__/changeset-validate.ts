@@ -34,4 +34,13 @@ describe('changeset with validation', () => {
     await waitFor(() => expect(validate).toBeCalledWith('name', 'Joseph'));
     await waitFor(() => expect(validate).toBeCalledWith('isAdmin', false));
   });
+
+  test('has isValid false if at least one of changes is invalid', async () => {
+    const validate = () => 'Wrong input';
+    const changeset = createChangeset({ name: 'Alexander', isAdmin: true }, { validate, autoValidate: false });
+    changeset.data.name = 'Chandler';
+    await changeset.validate();
+    expect(changeset.isValid).toBe(false);
+    expect(changeset.change.name.error).toBe('Wrong input');
+  });
 });
