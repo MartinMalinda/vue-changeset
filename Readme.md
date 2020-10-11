@@ -16,8 +16,8 @@ As opposed to [ember-changeset](https://github.com/poteto/ember-changeset) this 
 - [ ] useChangeset (almost the same as `createChangeset` but cleans up on unmount) 
 - [ ] nested data handling
 - [x] `changeset.assign()`
+- [x] `changeset.assignIfValid()`
 - [x] `changeset.validate()`
-- [ ] `changeset.execute()`
 
 ## Example
 
@@ -42,21 +42,13 @@ export default defineComponent({
       }
     });
 
-    const onSubmit = async () => {
-      // TODO: use changeset.excecute() here for simplicity
-      await userChangeset.validate();
-      if (userChangeset.isValid) {
-        userChangeset.assign();
-      }
-    };
-
-    return { useChangeset, onSubmit };
+    return { useChangeset };
   }
 });
 ```
 
 ```vue
- <form @submit.prevent="onSubmit">
+ <form @submit.prevent="changeset.assignIfValid">
     <label>First name</label>
     <input :model="changeset.firstName">
     <span v-if="changeset.changes.firstName.error"> {{ changeset.changes.firstName.error }} </span>

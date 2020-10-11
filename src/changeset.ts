@@ -55,6 +55,7 @@ export type Changeset<T> = {
   isValidating: Ref<boolean>,
   validate: ValidateFn<T>,
   assign: () => void,
+  assignIfValid: () => Promise<boolean>,
 };
 
 function createChangeMap<T>(model : T, getChangeset : () => Changeset<T>, options: ChangesetOptions<T>) : ChangeMap<T> {
@@ -121,16 +122,24 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
       Object.assign(model, changeset.data);
       changeset.data = _options.copy(model);
       changeset.change = createChangeMap(model, () => changeset, _options);
+    },
+    async assignIfValid() {
+      await changeset.validate();
+      if (changeset.isValid) {
+        changeset.assign();
+      }
+
+      return changeset.isValid;
     }
   });
 
-  Object.keys(model).forEach((key) => {
-    watch(() => changeset.data[key], (newValue) => {
-      if (_options.autoValidate) {
+  if (_options.autoValidate) {
+    Object.keys(model).forEach((key) => {
+      watch(() => changeset.data[key], () => {
         changeset.validate(key);
-      }
+      });
     });
-  });
+  }
 
   return changeset;
 }
