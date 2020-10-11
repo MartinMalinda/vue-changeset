@@ -1,5 +1,5 @@
-import clone from 'fast-copy';
-import { computed, reactive, ref, Ref, watch, toRefs, toRef } from 'vue';
+import { computed, reactive, Ref, watch } from 'vue';
+import defaultOptions from './default-options';
 
 // <IDEA>
 // const model = reactive({
@@ -27,15 +27,13 @@ import { computed, reactive, ref, Ref, watch, toRefs, toRef } from 'vue';
 
 type BaseModel = Record<any, any>;
 type ValidationError = boolean | string;
-type ValidateFn<T> = (prop? : keyof T, value?) => ValidationError | Promise<ValidationError>;
+export type ValidateFn<T> = (prop? : keyof T, value?) => ValidationError | Promise<ValidationError>;
 
-interface ChangesetOptions<T> {
+export interface ChangesetOptions<T> {
   autoValidate: boolean;
   validate: ValidateFn<T>;
-};
-const defaultOptions : ChangesetOptions<any> = {
-  autoValidate: false,
-  validate: (prop, value) => true
+  copy: (obj: BaseModel) => BaseModel;
+  checkifDirty: (change: { key: keyof T, oldValue: any, newValue: any, changeset: Changeset<T> }) => boolean;
 };
 
 export type Change = {
@@ -48,7 +46,7 @@ export type Change = {
 
 type ChangeMap<T> = Record<keyof T, Change>;
 
-type Changeset<T> = {
+export type Changeset<T> = {
   _model: T,
   data: T,
   change: ChangeMap<T>,
@@ -59,17 +57,23 @@ type Changeset<T> = {
   assign: () => void,
 };
 
-function createChangeMap<T>(model : T, getChangeset : () => Changeset<T>) : ChangeMap<T> {
+function createChangeMap<T>(model : T, getChangeset : () => Changeset<T>, options: ChangesetOptions<T>) : ChangeMap<T> {
   const changeMap : any = {};
 
   Object.keys(model).forEach(key => {
     changeMap[key] = {
       oldValue: model[key],
-      newValue: model[key],
-      isDirty: computed(() => {
+      newValue: computed(() => {
         const changeset = getChangeset();
-        return changeset.change[key].oldValue !== changeset.change[key].newValue;
-      }), // TODO: abstract and improve
+        return changeset.data[key];
+      }),
+      isDirty: computed(() => {
+        // TODO: abstract and improve
+        const changeset = getChangeset();
+        const newValue = changeset.change[key].newValue;
+        const oldValue = changeset.change[key].oldValue;
+        return options.checkifDirty({ newValue, oldValue, changeset, key: key as keyof T });
+      }),
       error: false,
       isValidating: false,
     };
@@ -87,8 +91,8 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
 
   const changeset = reactive<Changeset<T>>({
     _model: model,
-    data: clone(model),
-    change: createChangeMap(model, () => changeset),
+    data: _options.copy(model),
+    change: createChangeMap(model, () => changeset, _options),
     isValid: computed(() => {
       return !Object.values(changeset.change as ChangeMap<T>).find(change => change.error);
     }),
@@ -114,8 +118,8 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
     },
     assign() {
       Object.assign(model, changeset.data);
-      changeset.data = clone(model);
-      changeset.change = createChangeMap(model, () => changeset);
+      changeset.data = _options.copy(model);
+      changeset.change = createChangeMap(model, () => changeset, _options);
     }
   });
 
@@ -126,11 +130,6 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
       }
     });
   });
-
-  // console.log({ name: name.value });
-  // console.log({ data });
-  // console.log({ value: data.value });
-
 
   return changeset;
 }
