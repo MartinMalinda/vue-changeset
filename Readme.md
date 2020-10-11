@@ -1,4 +1,4 @@
-# 🚦 vue-changeset - alpha
+# 📜 vue-changeset - alpha
 
 [![gzip size](https://img.badgesize.io/https:/unpkg.com/vue-changeset/dist/vue-changeset.modern.js?label=gzip&compression=gzip)](https://unpkg.com/vue-changeset/dist/vue-changeset.modern.js) ![npm](https://img.shields.io/npm/v/vue-changeset)
 
