@@ -6,6 +6,10 @@
   "main": "dist/vue-changeset.js",
   "module": "dist/vue-changeset.module.js",
   "unpkg": "dist/vue-changeset.umd.js",
+  "files": [
+    "src",
+    "dist"
+  ],
   "scripts": {
     "test": "jest",
     "build": "microbundle build --tsconfig tsconfig.build.json --external vue",
