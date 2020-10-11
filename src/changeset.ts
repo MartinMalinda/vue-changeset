@@ -1,4 +1,4 @@
-import { computed, reactive, Ref, watch } from 'vue';
+import { computed, reactive, Ref, watch, WatchStopHandle } from 'vue';
 import defaultOptions from './default-options';
 
 // <IDEA>
@@ -25,7 +25,7 @@ import defaultOptions from './default-options';
 // </IDEA>
 
 
-type BaseModel = Record<any, any>;
+export type BaseModel = Record<any, any>;
 type ValidationError = boolean | string;
 export type ValidateFn<T> = (prop? : keyof T, value?) => ValidationError | Promise<ValidationError>;
 
@@ -48,6 +48,8 @@ type ChangeMap<T> = Record<keyof T, Change>;
 
 export type Changeset<T> = {
   _model: T,
+  _stopHandles: WatchStopHandle[],
+
   data: T,
   change: ChangeMap<T>,
   isValid: Ref<boolean>,
@@ -92,6 +94,8 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
 
   const changeset = reactive<Changeset<T>>({
     _model: model,
+    _stopHandles: [],
+
     data: _options.copy(model),
     change: createChangeMap(model, () => changeset, _options),
     isValid: computed(() => {
@@ -134,11 +138,11 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
   });
 
   if (_options.autoValidate) {
-    Object.keys(model).forEach((key) => {
-      watch(() => changeset.data[key], () => {
-        changeset.validate(key);
-      });
+    const stopHandles = Object.keys(model).map((key) => {
+      return watch(() => changeset.data[key], () => changeset.validate(key));
     });
+
+    changeset._stopHandles = [...changeset._stopHandles, ...stopHandles];
   }
 
   return changeset;

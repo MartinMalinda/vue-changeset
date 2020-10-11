@@ -13,7 +13,7 @@ As opposed to [ember-changeset](https://github.com/poteto/ember-changeset) this 
 - [x] Vue 3 support
 - [ ] Vue 2 + composition API support
 - [x] createChangeset
-- [ ] useChangeset (almost the same as `createChangeset` but cleans up on unmount) 
+- [x] useChangeset (createChangeset + cleanup on unmount) 
 - [ ] nested data handling
 - [x] `changeset.assign()`
 - [x] `changeset.assignIfValid()`
@@ -25,12 +25,12 @@ vue-changeset tries to not stand in the way and for simple usecases allows you j
 
 ```ts
 import { defineComponent } from 'vue';
-import { createChangeset } from 'vue-changeset';
+import { useChangeset } from 'vue-changeset';
 
 export default defineComponent({
   setup() {
     const model = { firstName: 'John', lastName: 'Doe',  };
-    const userChangeset = createChangeset(model, {
+    const userChangeset = useChangeset(model, {
       validate: (prop, value) => {
         if (prop === 'firstName') {
           return value.length > 2 || 'First Name must be at least 2 characters long';
@@ -60,14 +60,14 @@ If your validations needs are more advanced, you can use the createValidator fun
 
 ```ts
 import { defineComponent } from 'vue';
-import { createChangeset, createValidator } from 'vue-changeset';
+import { useChangeset, createValidator } from 'vue-changeset';
 // 
 import { tester, combine, minLength, regexp } from 'favalid';
 
 export default defineComponent({
   setup() {
     const model = { firstName: 'John', lastName: 'Doe',  };
-    const userChangeset = createChangeset(model, {
+    const userChangeset = useChangeset(model, {
       validate: createValidator({
         firstName: (value) => value && value.length > 2,
         lastName: combine(
@@ -95,7 +95,7 @@ const options = {
   checkifDirty: ({ key, oldValue, newValue }) => oldValue !== newValue 
 };
 
-const changeset = createChangeset(model, options);
+const changeset = useChangeset(model, options);
 ```
 
 `autoValidate` will validate a prop on any change
