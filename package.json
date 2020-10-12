@@ -6,6 +6,7 @@
   "main": "dist/vue-changeset.js",
   "module": "dist/vue-changeset.module.js",
   "unpkg": "dist/vue-changeset.umd.js",
+  "types": "dist/index.d.ts",
   "files": [
     "src",
     "dist"
