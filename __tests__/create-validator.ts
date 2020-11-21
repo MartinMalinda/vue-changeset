@@ -11,8 +11,8 @@ describe('createValidator()', () => {
   test('creates a validator function that checks for all properties', () => {
     const validate = createValidator({
       name: (value) => value.length > 5,
-      age: (value) => value > 18
-    }, { name: 'bar', age: 50 });
+      age: (value) => value > 18,
+    }, { name: 'bar', age: 50, foo: 'bar' });
     
     expect(validate('name', 'Joe')).toBe(false);
     expect(validate('name', 'Joseph')).toBe(true);
