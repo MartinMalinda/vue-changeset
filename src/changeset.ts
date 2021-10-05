@@ -27,7 +27,7 @@ import defaultOptions from './default-options';
 
 export type BaseModel = Record<any, any>;
 type ValidationError = boolean | string;
-export type ValidateFn<T> = (prop? : keyof T, value?) => ValidationError | Promise<ValidationError>;
+export type ValidateFn<T> = (prop?: keyof T, value?) => ValidationError | Promise<ValidationError>;
 
 export interface ChangesetOptions<T> {
   autoValidate: boolean;
@@ -57,11 +57,12 @@ export type Changeset<T> = {
   isValidating: Ref<boolean>,
   validate: ValidateFn<T>,
   assign: () => void,
+  reset: () => void,
   assignIfValid: () => Promise<boolean>,
 };
 
-function createChangeMap<T>(model : T, getChangeset : () => Changeset<T>, options: ChangesetOptions<T>) : ChangeMap<T> {
-  const changeMap : any = {};
+function createChangeMap<T>(model: T, getChangeset: () => Changeset<T>, options: ChangesetOptions<T>): ChangeMap<T> {
+  const changeMap: any = {};
 
   Object.keys(model).forEach(key => {
     changeMap[key] = {
@@ -85,7 +86,7 @@ function createChangeMap<T>(model : T, getChangeset : () => Changeset<T>, option
   return changeMap;
 }
 
-export function createChangeset<T extends BaseModel>(model: T, options? : Partial<ChangesetOptions<T>>) : Changeset<T> {
+export function createChangeset<T extends BaseModel>(model: T, options?: Partial<ChangesetOptions<T>>): Changeset<T> {
 
   const _options = {
     ...defaultOptions,
@@ -134,6 +135,10 @@ export function createChangeset<T extends BaseModel>(model: T, options? : Partia
       }
 
       return changeset.isValid;
+    },
+    reset() {
+      changeset.data = _options.copy(model);
+      changeset.change = createChangeMap(model, () => changeset, _options);
     }
   });
 
