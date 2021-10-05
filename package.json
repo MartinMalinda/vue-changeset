@@ -1,6 +1,6 @@
 {
   "name": "vue-changeset",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "description": "",
   "source": "src/index.ts",
   "main": "dist/vue-changeset.js",
