@@ -1,30 +1,6 @@
 import { computed, reactive, Ref, watch, WatchStopHandle } from 'vue';
 import defaultOptions from './default-options';
 
-// <IDEA>
-// const model = reactive({
-//   name: 'foo'
-// });
-
-// const refs = toRefs(model);
-// Object.entries(refs).forEach(([key, ref]) => {
-//   watch(() => ref, () => {
-//     // validate ETC
-//   });
-// });
-// </IDEA>
-
-// <IDEA>
-// const count = ref(1)
-// const plusOne = computed({
-//   get: () => count.value + 1,
-//   set: val => {
-//     count.value = val - 1
-//   }
-// })
-// </IDEA>
-
-
 export type BaseModel = Record<any, any>;
 type ValidationError = boolean | string;
 export type ValidateFn<T> = (prop?: keyof T, value?) => ValidationError | Promise<ValidationError>;
@@ -58,6 +34,7 @@ export type Changeset<T> = {
   validate: ValidateFn<T>,
   assign: () => void,
   reset: () => void,
+  swapModel: (T) => void,
   assignIfValid: () => Promise<boolean>,
 };
 
@@ -124,9 +101,9 @@ export function createChangeset<T extends BaseModel>(model: T, options?: Partial
       return changeset.change[prop].error;
     },
     assign() {
-      Object.assign(model, changeset.data);
-      changeset.data = _options.copy(model);
-      changeset.change = createChangeMap(model, () => changeset, _options);
+      Object.assign(changeset._model, changeset.data);
+      changeset.data = _options.copy(changeset._model);
+      changeset.change = createChangeMap(changeset._model, () => changeset, _options);
     },
     async assignIfValid() {
       await changeset.validate();
@@ -137,13 +114,17 @@ export function createChangeset<T extends BaseModel>(model: T, options?: Partial
       return changeset.isValid;
     },
     reset() {
-      changeset.data = _options.copy(model);
-      changeset.change = createChangeMap(model, () => changeset, _options);
+      changeset.data = _options.copy(changeset._model);
+      changeset.change = createChangeMap(changeset._model, () => changeset, _options);
+    },
+    swapModel(model) {
+      changeset._model = model;
+      changeset.reset();
     }
   });
 
   if (_options.autoValidate) {
-    const stopHandles = Object.keys(model).map((key) => {
+    const stopHandles = Object.keys(changeset._model).map((key) => {
       return watch(() => changeset.data[key], () => changeset.validate(key));
     });
 
